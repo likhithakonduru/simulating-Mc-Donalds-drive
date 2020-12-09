@@ -1,0 +1,85 @@
+#include<Servo.h>
+#include<IRremote.h>
+int LEDpins[]={19,18,17,16};//first red,then blue,then green,then yellow//
+int IRpins[]={13,12,11,10};//starting from ir sensor 1//
+int us_1echopin=9;
+int us_1triggerpin=8;
+int us_2echopin=5;
+int us_2triggerpin=4;
+float distance1;
+float distance2;
+Servo servo1;
+Servo servo2;
+void setup()
+{
+  Serial.begin(9600);
+  for(int i=0;i<4;i++){
+    pinMode(LEDpins[i],OUTPUT);
+    IRrecv irrecv(IRpins[i]);
+  }
+  servo1.attach(7);
+  servo2.attach(6);
+}
+void loop()
+{
+  pinMode(us_1triggerpin,OUTPUT);
+  pinMode(us_1echopin,INPUT);
+  digitalWrite(us_1triggerpin,LOW);
+  delayMicroseconds(100);
+  pinMode(us_1triggerpin,HIGH);
+  delayMicroseconds(100);
+  pinMode(us_1triggerpin,LOW);
+  distance1=pulseIn(us_1echopin,HIGH)/52.8;
+  Serial.print(distance1);
+  Serial.println(" cm");
+  if(distance1<30){
+    servo1.write(90);
+    delay(750);
+    servo1.write(0);
+  }
+  else{
+    servo1.write(0);
+  }
+  for(int i=0;i<4;i++){
+    IRrecv irrecv(IRpins[i]);
+    decode_results results;
+    irrecv.enableIRIn();
+    Serial.print("do you need item ");
+    Serial.print(i+1);
+    Serial.println(" ?");
+    Serial.println("press 1 if you need this item,otherwise press 0");
+    delay(750);
+    if(irrecv.decode(&results)){
+      Serial.println(results.value);
+      if(results.value==0xFD30CF){
+        Serial.println("ok,we are not considering your order for this item");
+      }
+      if(results.value==0xFD08F7){
+        Serial.println("your order is being prepared");
+        delay(500);
+        Serial.println("your order is ready.it is at window2");
+        digitalWrite(LEDpins[i],HIGH);  
+      }
+    }
+  }
+  
+  pinMode(us_2triggerpin,OUTPUT);
+  pinMode(us_2echopin,INPUT);
+  digitalWrite(us_2triggerpin,LOW);
+  delayMicroseconds(100);
+  pinMode(us_2triggerpin,HIGH);
+  delayMicroseconds(100);
+  pinMode(us_2triggerpin,LOW);
+  distance2=pulseIn(us_2echopin,HIGH)/52.8;
+  Serial.print(distance2);
+  Serial.println(" cm");
+  if(distance2<30){
+    servo2.write(90);
+    delay(5000);
+    servo2.write(0);
+  }
+  else{
+    servo2.write(0);
+  }
+}
+  
